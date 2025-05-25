@@ -1,0 +1,4 @@
+*.s
+stage.*
+!stage.*.c
+.DS_Store
