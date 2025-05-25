@@ -4,6 +4,16 @@ from typing import Iterator, Optional
 from cam_lexer import Token, TokenType
 
 
+def safe_next(tokens: Iterator[Token]) -> Optional[Token]:
+    """
+    Gets the next token from an iterator if it exists, otherwise returns None
+    """
+    try:
+        return next(tokens)
+    except StopIteration:
+        return None
+
+
 @dataclass
 class Expression:
     """
@@ -17,7 +27,10 @@ class Expression:
         """
         Parse a string of tokens into an expression if it is valid
         """
-        token = next(tokens)
+        maybe_token = safe_next(tokens)
+        if maybe_token is None:
+            return None
+        token = maybe_token
         if token.token_type != TokenType.INT_LITERAL:
             return None
 
@@ -47,7 +60,10 @@ class Statement:
         """
         Parse a string of tokens into an expression if it is valid
         """
-        token = next(tokens)
+        maybe_token = safe_next(tokens)
+        if maybe_token is None:
+            return None
+        token = maybe_token
         if token.token_type != TokenType.RETURN:
             return None
 
@@ -55,7 +71,10 @@ class Statement:
         if not expression:
             return None
 
-        token = next(tokens)
+        maybe_token = safe_next(tokens)
+        if maybe_token is None:
+            return None
+        token = maybe_token
         if token.token_type != TokenType.SEMICOLON:
             return None
 
@@ -82,25 +101,40 @@ class Function:
         """
         Parses a string of tokens into a function if it is valid
         """
-        token = next(tokens)
+        maybe_token = safe_next(tokens)
+        if maybe_token is None:
+            return None
+        token = maybe_token
         if token.token_type != TokenType.INT:
             return None
 
-        token = next(tokens)
+        maybe_token = safe_next(tokens)
+        if maybe_token is None:
+            return None
+        token = maybe_token
         if token.token_type != TokenType.IDENTIFIER:
             return None
         name = token.value
         assert name and isinstance(name, TokenType.value_tokens()[token.token_type])
 
-        token = next(tokens)
+        maybe_token = safe_next(tokens)
+        if maybe_token is None:
+            return None
+        token = maybe_token
         if token.token_type != TokenType.OPEN_PARENTHESIS:
             return None
 
-        token = next(tokens)
+        maybe_token = safe_next(tokens)
+        if maybe_token is None:
+            return None
+        token = maybe_token
         if token.token_type != TokenType.CLOSE_PARENTHESIS:
             return None
 
-        token = next(tokens)
+        maybe_token = safe_next(tokens)
+        if maybe_token is None:
+            return None
+        token = maybe_token
         if token.token_type != TokenType.OPEN_BRACKET:
             return None
 
@@ -108,7 +142,10 @@ class Function:
         if not statement:
             return None
 
-        token = next(tokens)
+        maybe_token = safe_next(tokens)
+        if maybe_token is None:
+            return None
+        token = maybe_token
         if token.token_type != TokenType.CLOSE_BRACKET:
             return None
 
@@ -128,6 +165,7 @@ class Program:
     """
     Represents a program in an AST tree
     """
+
     function: Function
 
     @classmethod
