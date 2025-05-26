@@ -1,7 +1,11 @@
-from dataclasses import dataclass
-from typing import Iterator, Optional
+"""
+Used to parse lexed tokens into AST trees, which can then be compiled into a program
+"""
 
-from cam_lexer import Token, TokenType
+from dataclasses import dataclass
+from typing import Iterator, Optional, Union
+
+from cam_lexer import Token, TokenType, UnaryOperator
 
 
 def safe_next(tokens: Iterator[Token]) -> Optional[Token]:
@@ -15,15 +19,59 @@ def safe_next(tokens: Iterator[Token]) -> Optional[Token]:
 
 
 @dataclass
+class ConstantExpression:
+    """
+    Represents a constant integer in an AST tree
+    """
+
+    value: int
+
+    def compile(self) -> str:
+        """
+        Return the expression as assembly
+        """
+        return f"    mov     w0, #{self.value}"
+
+
+@dataclass
+class UnaryOperatorExpression:
+    """
+    Represents a unary operator in an AST tree
+    """
+
+    operator: UnaryOperator
+    expression: Union[ConstantExpression, "UnaryOperatorExpression"]
+
+    def compile(self) -> Optional[str]:
+        """
+        Return the expression as assembly
+        """
+        compiled_expression = self.expression.compile()
+        if not compiled_expression:
+            return None
+
+        if self.operator == UnaryOperator.NEGATION:
+            return compiled_expression + "\n    neg     w0, w0"
+
+        if self.operator == UnaryOperator.COMPLEMENT:
+            return compiled_expression + "\n    mvn     w0, w0"
+
+        if self.operator == UnaryOperator.NOT:
+            return compiled_expression + "\n    cmp     w0, #0\n    cset    w0, eq"
+
+        return None
+
+
+@dataclass
 class Expression:
     """
     Represents an expression in an AST tree
     """
 
-    value: int
-
     @classmethod
-    def parse(cls, tokens: Iterator[Token]) -> Optional["Expression"]:
+    def parse(
+        cls, tokens: Iterator[Token]
+    ) -> Optional[ConstantExpression | UnaryOperatorExpression]:
         """
         Parse a string of tokens into an expression if it is valid
         """
@@ -31,20 +79,19 @@ class Expression:
         if maybe_token is None:
             return None
         token = maybe_token
-        if token.token_type != TokenType.INT_LITERAL:
-            return None
+        if token.token_type == TokenType.INT_LITERAL:
+            assert token.value is not None and isinstance(
+                token.value, TokenType.value_tokens()[token.token_type]
+            )
+            return ConstantExpression(token.value)
 
-        assert token.value is not None and isinstance(
-            token.value, TokenType.value_tokens()[token.token_type]
-        )
-
-        return Expression(token.value)
-
-    def evaluate(self) -> int:
-        """
-        Evaluate the expression
-        """
-        return self.value
+        if token.token_type in TokenType.unary_operators():
+            operator = TokenType.unary_operators()[token.token_type]
+            expression = Expression.parse(tokens)
+            if not expression:
+                return None
+            return UnaryOperatorExpression(operator, expression)
+        return None
 
 
 @dataclass
@@ -53,7 +100,7 @@ class Statement:
     Represents a statement in an AST tree
     """
 
-    expression: Expression
+    expression: ConstantExpression | UnaryOperatorExpression
 
     @classmethod
     def parse(cls, tokens: Iterator[Token]) -> Optional["Statement"]:
@@ -84,7 +131,8 @@ class Statement:
         """
         Produce assembly of the statement
         """
-        return f"    mov     w0, #{self.expression.evaluate()}\n    ret"
+
+        return self.expression.compile() + "\n    ret"
 
 
 @dataclass

@@ -8,6 +8,16 @@ from enum import Enum
 from typing import Optional
 
 
+class UnaryOperator(Enum):
+    """
+    An enumeration of all unary operators
+    """
+
+    NEGATION = 1
+    COMPLEMENT = 2
+    NOT = 3
+
+
 class TokenType(Enum):
     """
     The various types of tokens, along with the regex string that matches them
@@ -22,6 +32,9 @@ class TokenType(Enum):
     INT = r"int\b"
     IDENTIFIER = r"[a-zA-Z]\w*"
     INT_LITERAL = r"\d+"
+    NEGATION = r"-"
+    COMPLEMENT = r"~"
+    NOT = r"!"
 
     @classmethod
     def value_tokens(cls) -> dict["TokenType", type]:
@@ -31,6 +44,17 @@ class TokenType(Enum):
         TokenTypes without a value are not included
         """
         return {cls.IDENTIFIER: str, cls.INT_LITERAL: int}
+
+    @classmethod
+    def unary_operators(cls) -> dict["TokenType", UnaryOperator]:
+        """
+        Returns a dictionary of all unary operator tokens and their UnaryOperator enum value
+        """
+        return {
+            cls.NEGATION: UnaryOperator.NEGATION,
+            cls.COMPLEMENT: UnaryOperator.COMPLEMENT,
+            cls.NOT: UnaryOperator.NOT,
+        }
 
 
 TOKEN_REGEX = "|".join([token_type.value for token_type in TokenType])
