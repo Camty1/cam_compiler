@@ -1,0 +1,25 @@
+statement: assignment EPSILON | standalone_channel EPSILON
+assignment: IDENT EQUALS expr [SEMICOLON]
+standalone_channel: IDENT [label]
+label: AS IDENT
+expr: term PLUS factor | term MINUS factor | term
+term: factor MULT factor | factor DIV factor | factor
+factor: function | L_PAREN expr R_PAREN | PI | IDENT | NUM
+function: IDENT L_PAREN [expr] (COMMA expr)* R_PAREN
+
+statement: hidden_assignment EPSILON | assignment EPSILON | labeled_channel EPSILON | standalone_channel EPSILON
+hidden_assignment: assignment SEMICOLON
+assignment: IDENT EQUALS expr
+labeled_channel: standalone_channel label
+standalone_channel: IDENT
+label: AS IDENT
+expr: add | sub | term
+add: expr PLUS term
+sub: expr MINUS term
+term: mult | div | factor
+mult: term MULT factor
+div: term DIV factor
+factor: function | paren_expr | PI | IDENT | NUM
+function: IDENT L_PAREN arguments R_PAREN
+paren_expr: L_PAREN expr R_PAREN
+arguments: [expr] (COMMA expr)*
